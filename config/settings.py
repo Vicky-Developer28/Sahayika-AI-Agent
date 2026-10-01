@@ -143,9 +143,12 @@ ASGI_APPLICATION = "config.asgi.application"
 # If you later add users, analytics, persistent conversations, etc.,
 # this can be changed to SQLite/PostgreSQL.
 #
-
-DATABASES = {}
-
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # =============================================================================
 # SESSION CONFIGURATION
