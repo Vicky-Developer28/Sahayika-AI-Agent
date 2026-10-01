@@ -1,0 +1,309 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% translate "Sahayika - PM Ujjwala Yojana Assistant" %}</title>
+    <!-- Load Django's JavaScript Translation Catalog -->
+    <script src="{% url 'javascript-catalog' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <style>
+        :root {
+            --chat-bg: #343541;
+            --input-bg: #40414f;
+            --text-primary: #ececf1;
+            --text-secondary: #c5c5d2;
+            --border-color: #4d4d4f;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            font-family: Söhne, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--chat-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* Top Bar for Language and Voice Selection */
+        .top-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 20px;
+            background-color: #202123;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .control-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .control-group select {
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+            font-size: 12px;
+        }
+        
+        .control-group select option {
+            background-color: #202123;
+            color: var(--text-primary);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        /* Empty State / Logo Area */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+        
+        .logo-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .logo-title {
+            font-size: 2.2rem;
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .logo-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* --- Input Area --- */
+        .input-section {
+            padding: 20px;
+            background-image: linear-gradient(180deg, rgba(53,55,64,0), #353740 58.85%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .loading-indicator {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .loading-indicator.hidden {
+            display: none;
+        }
+
+        .chat-form {
+            width: 100%;
+            max-width: 768px;
+        }
+
+        .input-container {
+            position: relative;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 10px;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+            max-height: 200px;
+            line-height: 1.5;
+        }
+
+        .chat-input::placeholder {
+            color: #8e8ea0;
+        }
+
+        .btn-action {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .btn-action:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-send {
+            color: #19c37d;
+        }
+        
+        .btn-send:hover {
+            color: #1aed96;
+            background: rgba(25, 195, 125, 0.1);
+        }
+
+        .voice-label {
+            display: none;
+        }
+
+        /* Message Styling */
+        .chat-message-wrapper {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .ai-wrapper {
+            background-color: #444654;
+        }
+        .error-wrapper .chat-text {
+            color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .top-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .input-section {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<main class="main-content">
+    
+    <!-- Top Bar with Voice and Language Controls -->
+    <div class="top-toolbar">
+        <!-- Voice Switcher Dropdown -->
+        <div class="control-group">
+            <label for="voice-select" class="control-label">{% translate "Speech Voice" %}</label>
+            <select id="voice-select">
+                <option value="default-gentle">{% translate "Default Gentle Voice" %}</option>
+            </select>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="control-group">
+            <label for="language-select" class="control-label">{% translate "App Language" %}</label>
+            <form action="{% url 'set_language' %}" method="post" id="language-form" style="margin: 0;">
+                {% csrf_token %}
+                <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                <select name="language" id="language-select" onchange="this.form.submit()">
+                    {% get_current_language as CURRENT_LANGUAGE %}
+                    {% get_available_languages as LANGUAGES %}
+                    {% for lang_code, lang_name in LANGUAGES %}
+                        <option value="{{ lang_code }}" {% if lang_code == CURRENT_LANGUAGE %}selected{% endif %}>
+                            {{ lang_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chat Container -->
+    <div class="chat-container" id="chat-container" role="log" aria-live="polite" aria-label="{% translate 'Conversation' %}">
+        
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state">
+            <div class="logo-icon" aria-hidden="true">🪔</div>
+            <h1 class="logo-title">{% translate "Sahayika" %}</h1>
+            <p class="logo-subtitle">{% translate "PM Ujjwala Yojana Assistant" %}</p>
+        </div>
+        
+    </div>
+
+    <!-- Input Area Container -->
+    <div class="input-section">
+        
+        <!-- Loading indicator -->
+        <div id="loading-indicator" class="loading-indicator hidden" aria-live="polite" aria-atomic="true">
+            <span class="loading-dots">•••</span>
+            <span class="loading-text">{% translate "Thinking…" %}</span>
+        </div>
+
+        <!-- Text input form -->
+        <form id="chat-form" class="chat-form" autocomplete="off">
+            {% csrf_token %}
+            <div class="input-container">
+                
+                <!-- Voice button -->
+                <button id="btn-voice" class="btn-action btn-voice" aria-label="{% translate 'Speak' %}" title="{% translate 'Speak' %}" type="button">
+                    <span class="voice-icon" aria-hidden="true">🎤</span>
+                    <span class="voice-label">{% translate "Speak" %}</span>
+                </button>
+
+                <textarea
+                    id="chat-input"
+                    name="message"
+                    class="chat-input"
+                    rows="1"
+                    placeholder="{% translate 'Type your question here…' %}"
+                    aria-label="{% translate 'Your question' %}"
+                    maxlength="1000"
+                ></textarea>
+                
+                <button type="submit" id="btn-send" class="btn-action btn-send" aria-label="{% translate 'Send' %}">
+                    <span aria-hidden="true">➤</span>
+                </button>
+                
+            </div>
+        </form>
+        
+    </div>
+</main>
+
+<script src="{% static 'js/chat.js' %}"></script>
+</body>
+</html>
